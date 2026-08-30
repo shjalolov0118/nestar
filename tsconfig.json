@@ -15,7 +15,7 @@
 		"rootDir": "./",
 		// "ignoreDeprecations": "6.0",
 		"outDir": "./dist",
-		"baseUrl": "./",
+		// "baseUrl": "./",
 		"incremental": true,
 		"skipLibCheck": true,
 		"strictNullChecks": true,
