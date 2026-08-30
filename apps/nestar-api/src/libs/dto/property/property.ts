@@ -1,7 +1,7 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
 import * as mongoose from 'mongoose';
 import { PropertyLocation, PropertyStatus, PropertyType } from '../../enums/property.enum';
-import { Member } from '../member/member';
+import { Member, TotalCounter } from '../member/member';
 
 @ObjectType()
 export class Property {
@@ -81,5 +81,15 @@ export class Property {
 
 	@Field(() => Member, { nullable: true })
 	memberData?: Member;
-	targetProperty: Member | undefined;
+
+	targetProperty?: Member;
+}
+
+@ObjectType()
+export class Properties {
+	@Field(() => [Property])
+	list!: Property[];
+
+	@Field(() => [TotalCounter], { nullable: true })
+	metaCounter!: TotalCounter[];
 }
