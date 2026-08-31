@@ -70,6 +70,7 @@ export class MemberService {
 			throw new InternalServerErrorException(Message.WRONG_PASSWORD);
 		}
 
+		response.accessToken = await this.authService.createToken(response);
 		return response;
 	}
 
@@ -86,7 +87,7 @@ export class MemberService {
 			.exec();
 
 		if (!result) {
-			throw new InternalServerErrorException(Message.UPLOAD_FAILED);
+			throw new InternalServerErrorException(Message.UPDATE_FAILED);
 		}
 
 		result.accessToken = await this.authService.createToken(result);
@@ -122,6 +123,20 @@ export class MemberService {
 
 		// meLiked
 		// meFollowed
+
+		return targetMember;
+	}
+
+	public async getMemberData(targetId: ObjectId): Promise<Member> {
+		const targetMember = await this.memberModel
+			.findOne({
+				_id: targetId,
+				memberStatus: { $in: [MemberStatus.ACTIVE, MemberStatus.BLOCK] },
+			})
+			.lean()
+			.exec();
+
+		if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
 		return targetMember;
 	}

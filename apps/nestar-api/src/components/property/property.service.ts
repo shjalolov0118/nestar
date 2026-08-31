@@ -27,17 +27,21 @@ export class PropertyService {
 	) {}
 
 	public async createProperty(input: PropertyInput): Promise<Property> {
+		let createdProperty: Property | null = null;
 		try {
-			const result = await this.propertyModel.create(input);
+			createdProperty = await this.propertyModel.create(input);
 
 			await this.memberService.memberStatsEditor({
-				_id: result.memberId,
+				_id: createdProperty.memberId,
 				targetKey: 'memberProperties',
 				modifier: 1,
 			});
 
-			return result;
+			return createdProperty;
 		} catch (err: any) {
+			if (createdProperty?._id) {
+				await this.propertyModel.findByIdAndDelete(createdProperty._id).exec();
+			}
 			console.log('Error, Service.model:', err.message);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
@@ -75,7 +79,7 @@ export class PropertyService {
 			// meLiked
 		}
 
-		targetProperty.memberData = await this.memberService.getMember(memberId, targetProperty.memberId);
+		targetProperty.memberData = await this.memberService.getMemberData(targetProperty.memberId);
 
 		return targetProperty;
 	}
@@ -101,10 +105,11 @@ export class PropertyService {
 	}
 
 	public async updateProperty(memberId: ObjectId, input: PropertyUpdate): Promise<Property> {
-		let { propertyStatus, soldAt, deletedAt } = input;
+		const { _id, ...changes } = input;
+		let { propertyStatus, soldAt, deletedAt } = changes;
 
 		const search: T = {
-			_id: input._id,
+			_id,
 			memberId: memberId,
 			propertyStatus: PropertyStatus.ACTIVE,
 		};
@@ -116,7 +121,7 @@ export class PropertyService {
 			.findOneAndUpdate(
 				search,
 				{
-					...input,
+					...changes,
 					soldAt,
 					deletedAt,
 				},
@@ -139,7 +144,7 @@ export class PropertyService {
 		return result;
 	}
 
-	public async getProperties(memberId: ObjectId, input: PropertiesInquiry): Promise<Property> {
+	public async getProperties(memberId: ObjectId, input: PropertiesInquiry): Promise<Properties> {
 		const match: T = { propertyStatus: PropertyStatus.ACTIVE };
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
@@ -185,10 +190,10 @@ export class PropertyService {
 		} = input.search;
 
 		if (memberId) match.memberId = shapeIntoMongoObjectId(memberId);
-		if (locationList) match.propertyLocation = { $in: locationList };
-		if (roomsList) match.propertyRooms = { $in: roomsList };
-		if (bedsList) match.propertyBeds = { $in: bedsList };
-		if (typeList) match.propertyType = { $in: typeList };
+		if (locationList?.length) match.propertyLocation = { $in: locationList };
+		if (roomsList?.length) match.propertyRooms = { $in: roomsList };
+		if (bedsList?.length) match.propertyBeds = { $in: bedsList };
+		if (typeList?.length) match.propertyType = { $in: typeList };
 
 		if (pricesRange) match.propertyPrice = { $gte: pricesRange.start, $lte: pricesRange.end };
 		if (periodsRange) match.createdAt = { $gte: periodsRange.start, $lte: periodsRange.end };
@@ -196,7 +201,7 @@ export class PropertyService {
 
 		if (text) match.propertyTitle = { $regex: new RegExp(text, 'i') };
 
-		if (options) {
+		if (options?.length) {
 			match['$or'] = options.map((ele) => {
 				return { [ele]: true };
 			});
@@ -246,7 +251,7 @@ export class PropertyService {
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
 		if (propertyStatus) match.propertyStatus = propertyStatus;
-		if (propertyLocationList) match.propertyLocation = { $in: propertyLocationList };
+		if (propertyLocationList?.length) match.propertyLocation = { $in: propertyLocationList };
 
 		const result = await this.propertyModel
 			.aggregate([
@@ -272,18 +277,25 @@ export class PropertyService {
 	}
 
 	public async updatePropertyByAdmin(input: PropertyUpdate): Promise<Property> {
-		let { propertyStatus, soldAt, deletedAt } = input;
+		const { _id, ...changes } = input;
+		let { propertyStatus, soldAt, deletedAt } = changes;
 
 		const search: T = {
-			_id: input._id,
+			_id,
 			propertyStatus: PropertyStatus.ACTIVE,
 		};
 
 		if (propertyStatus === PropertyStatus.SOLD) soldAt = moment().toDate();
 		else if (propertyStatus === PropertyStatus.DELETE) deletedAt = moment().toDate();
 
+		const update = {
+			...changes,
+			soldAt,
+			deletedAt,
+		};
+
 		const result = await this.propertyModel
-			.findOneAndUpdate(search, input, {
+			.findOneAndUpdate(search, update, {
 				new: true,
 			})
 			.exec();

@@ -18,8 +18,6 @@ export class AuthGuard implements CanActivate {
 				throw new BadRequestException(Message.TOKEN_NOT_EXIST);
 			}
 
-			console.log('bearerToken => ', bearerToken);
-
 			const token = bearerToken.split(' ')[1];
 			const authMember = await this.authService.verifyToken(token);
 

@@ -1,4 +1,6 @@
 import { ObjectId } from 'bson';
+import { BadRequestException } from '@nestjs/common';
+import { Message } from './enums/common.enum';
 
 export const availableAgentSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews', 'memberRank'];
 export const availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
@@ -17,17 +19,22 @@ export const availablePropertySorts = [
 /** IMAGE CONFIGURATION **/
 
 /* IMAGE CONFIGURATION */
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import * as path from 'path';
 
 export const validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg'];
+export const validImageTargets = ['member', 'property', 'article'];
 export const getSerialForImage = (filename: string) => {
 	const ext = path.parse(filename).ext;
-	return uuidv4() + ext;
+	return randomUUID() + ext;
 };
 
 export const shapeIntoMongoObjectId = (target: any) => {
-	return typeof target === 'string' ? new ObjectId(target) : target;
+	if (target instanceof ObjectId) return target;
+	if (typeof target !== 'string' || !ObjectId.isValid(target)) {
+		throw new BadRequestException(Message.BAD_REQUEST);
+	}
+	return new ObjectId(target) as any;
 };
 
 export const lookupMember = {

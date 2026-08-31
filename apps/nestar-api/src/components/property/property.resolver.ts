@@ -57,18 +57,18 @@ export class PropertyResolver {
 	}
 
 	@UseGuards(WithoutGuard)
-	@Query(() => Property)
+	@Query(() => Properties)
 	public async getProperties(
 		@Args('input') input: PropertiesInquiry,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
-	): Promise<Property> {
+	): Promise<Properties> {
 		console.log('Query: getProperties');
 		return await this.propertyService.getProperties(memberId, input);
 	}
 
 	@Roles(MemberType.AGENT)
 	@UseGuards(RolesGuard)
-	@Query((returns) => Properties)
+	@Query(() => Properties)
 	public async getAgentProperties(
 		@Args('input') input: AgentPropertiesInquiry,
 		@AuthMember('_id') memberId: mongoose.ObjectId,
@@ -81,18 +81,15 @@ export class PropertyResolver {
 
 	@Roles(MemberType.ADMIN)
 	@UseGuards(RolesGuard)
-	@Query((returns) => Properties)
-	public async getAllPropertiesByAdmin(
-		@Args('input') input: AllPropertiesInquiry,
-		@AuthMember('_id') memberId: mongoose.ObjectId,
-	): Promise<Properties> {
+	@Query(() => Properties)
+	public async getAllPropertiesByAdmin(@Args('input') input: AllPropertiesInquiry): Promise<Properties> {
 		console.log('Query: getAllPropertiesByAdmin');
 		return await this.propertyService.getAllPropertiesByAdmin(input);
 	}
 
 	@Roles(MemberType.ADMIN)
 	@UseGuards(RolesGuard)
-	@Mutation((returns) => Property)
+	@Mutation(() => Property)
 	public async updatePropertyByAdmin(@Args('input') input: PropertyUpdate): Promise<Property> {
 		console.log('Mutation: updatePropertyByAdmin');
 		input._id = shapeIntoMongoObjectId(input._id);
@@ -101,7 +98,7 @@ export class PropertyResolver {
 
 	@Roles(MemberType.ADMIN)
 	@UseGuards(RolesGuard)
-	@Mutation((returns) => Property)
+	@Mutation(() => Property)
 	public async removePropertyByAdmin(@Args('propertyId') input: string): Promise<Property> {
 		console.log('Mutation: removePropertyByAdmin');
 		const propertyId = shapeIntoMongoObjectId(input);
