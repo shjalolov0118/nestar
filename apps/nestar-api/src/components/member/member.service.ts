@@ -106,7 +106,7 @@ export class MemberService {
 			},
 		};
 
-		const targetMember = await this.memberModel.findOne(search).lean().exec();
+		const targetMember = await this.memberModel.findOne(search).lean<Member>().exec();
 
 		if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 
@@ -125,7 +125,8 @@ export class MemberService {
 			}
 		}
 
-		// meLiked
+		const likeInput: LikeInput = { memberId, likeRefId: targetId, likeGroup: LikeGroup.MEMBER };
+		targetMember.meLiked = await this.likeService.checkLikeExistence(likeInput);
 		// meFollowed
 
 		return targetMember;
