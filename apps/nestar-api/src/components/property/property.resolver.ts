@@ -10,6 +10,7 @@ import {
 import { MemberType } from '../../libs/enums/member.enum';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UseGuards } from '@nestjs/common';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AuthMember } from '../auth/decorators/authMember.decorator';
 import * as mongoose from 'mongoose';
@@ -75,6 +76,17 @@ export class PropertyResolver {
 	): Promise<Properties> {
 		console.log('Query: getAgentProperties');
 		return await this.propertyService.getAgentProperties(memberId, input);
+	}
+
+	@UseGuards(AuthGuard)
+	@Mutation(() => Property)
+	public async likeTargetProperty(
+		@Args('propertyId') input: string,
+		@AuthMember('_id') memberId: mongoose.ObjectId,
+	): Promise<Property> {
+		console.log('Mutation: likeTargetProperty');
+		const likeRefId = shapeIntoMongoObjectId(input);
+		return await this.propertyService.likeTargetProperty(memberId, likeRefId);
 	}
 
 	/* ADMIN */
