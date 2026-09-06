@@ -24,6 +24,7 @@ export const availableCommentSorts = ['createdAt', 'updatedAt'];
 /* IMAGE CONFIGURATION */
 import { randomUUID } from 'crypto';
 import * as path from 'path';
+import { T } from './types/common';
 
 export const validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg'];
 export const validImageTargets = ['member', 'property', 'article'];
@@ -38,6 +39,37 @@ export const shapeIntoMongoObjectId = (target: any) => {
 		throw new BadRequestException(Message.BAD_REQUEST);
 	}
 	return new ObjectId(target) as any;
+};
+
+export const lookupAuthMemberLiked = (memberId: T, targetRefId: string = '$_id') => {
+	return {
+		$lookup: {
+			from: 'likes',
+			let: {
+				localLikeRefId: targetRefId,
+				localMemberId: memberId,
+				localMyFavorite: true,
+			},
+			pipeline: [
+				{
+					$match: {
+						$expr: {
+							$and: [{ $eq: ['$likeRefId', '$$localLikeRefId'] }, { $eq: ['$memberId', '$$localMemberId'] }],
+						},
+					},
+				},
+				{
+					$project: {
+						_id: 0,
+						memberId: 1,
+						likeRefId: 1,
+						myFavorite: '$$localMyFavorite',
+					},
+				},
+			],
+			as: 'meLiked',
+		},
+	};
 };
 
 export const lookupMember = {
